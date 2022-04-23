@@ -1,4 +1,4 @@
-course-info
+Self Learning: course-info
 ===========
 
 GitHub Repo for http://dsg.csail.mit.edu/6.830/
