@@ -1,12 +1,12 @@
 package simpledb.optimizer;
 
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Iterator;
-
 import simpledb.execution.*;
 import simpledb.storage.TupleDesc;
 import simpledb.storage.TupleDesc.TDItem;
+
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Iterator;
 
 public class QueryPlanVisualizer {
 
@@ -24,20 +24,17 @@ public class QueryPlanVisualizer {
         if (root == null)
             return 0;
 
-        if (!(root instanceof Operator))
+        if (!(root instanceof Operator o))
             return 2;
-        Operator o = (Operator) root;
         OpIterator[] children = o.getChildren();
 
         if (o instanceof Join || o instanceof HashEquiJoin) {
             int d1 = this.calculateQueryPlanTreeDepth(children[0]);
             int d2 = this.calculateQueryPlanTreeDepth(children[1]);
             return Math.max(d1, d2) + 3;
-        }
-        else
-        {
-            if (children!=null && children[0]!=null)
-                return this.calculateQueryPlanTreeDepth(children[0])+2;
+        } else {
+            if (children != null && children[0] != null)
+                return this.calculateQueryPlanTreeDepth(children[0]) + 2;
         }
         return 2;
     }
@@ -67,8 +64,7 @@ public class QueryPlanVisualizer {
         int adjustDepth = currentDepth == 0 ? -1 : 0;
         SubTreeDescriptor thisNode = new SubTreeDescriptor(null);
 
-        if (queryPlan instanceof SeqScan) {
-            SeqScan s = (SeqScan) queryPlan;
+        if (queryPlan instanceof SeqScan s) {
             String tableName = s.getTableName();
             String alias = s.getAlias();
 //            TupleDesc td = s.getTupleDesc();
@@ -117,7 +113,7 @@ public class QueryPlanVisualizer {
                 String field2 = td.getFieldName(jp.getField2()
                         + children[0].getTupleDesc().numFields());
                 thisNode.text = String.format("%1$s(%2$s),card:%3$d", JOIN,
-                        field1 + jp.getOperator() + field2,j.getEstimatedCardinality());
+                        field1 + jp.getOperator() + field2, j.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (JOIN.length() / 2 > parentUpperBarStartShift)
                     upBarShift = JOIN.length() / 2;
@@ -146,7 +142,7 @@ public class QueryPlanVisualizer {
                 String field2 = td.getFieldName(jp.getField2()
                         + children[0].getTupleDesc().numFields());
                 thisNode.text = String.format("%1$s(%2$s),card:%3$d", HASH_JOIN, field1
-                        + jp.getOperator() + field2,j.getEstimatedCardinality());
+                        + jp.getOperator() + field2, j.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (HASH_JOIN.length() / 2 > parentUpperBarStartShift)
                     upBarShift = HASH_JOIN.length() / 2;
@@ -166,8 +162,7 @@ public class QueryPlanVisualizer {
                 thisNode.leftChild = left;
                 thisNode.rightChild = right;
                 thisNode.height = currentDepth;
-            }
-            else if (plan instanceof Aggregate) {
+            } else if (plan instanceof Aggregate) {
                 Aggregate a = (Aggregate) plan;
                 int upBarShift = parentUpperBarStartShift;
                 String alignTxt;
@@ -176,12 +171,12 @@ public class QueryPlanVisualizer {
 
                 if (gfield == Aggregator.NO_GROUPING) {
                     thisNode.text = String.format("%1$s(%2$s),card:%3$d",
-                            a.aggregateOp(), a.aggregateFieldName(),a.getEstimatedCardinality());
+                            a.aggregateOp(), a.aggregateFieldName(), a.getEstimatedCardinality());
                     alignTxt = td.getFieldName(0);
                 } else {
                     thisNode.text = String.format("%1$s(%2$s), %3$s(%4$s),card:%5$d",
                             GROUPBY, a.groupFieldName(), a.aggregateOp(),
-                            a.aggregateFieldName(),a.getEstimatedCardinality());
+                            a.aggregateFieldName(), a.getEstimatedCardinality());
                     alignTxt = GROUPBY;
                 }
                 if (alignTxt.length() / 2 > parentUpperBarStartShift)
@@ -204,7 +199,7 @@ public class QueryPlanVisualizer {
                 thisNode.text = String.format("%1$s(%2$s),card:%3$d", SELECT, children[0]
                         .getTupleDesc().getFieldName(p.getField())
                         + p.getOp()
-                        + p.getOperand(),f.getEstimatedCardinality());
+                        + p.getOperand(), f.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (SELECT.length() / 2 > parentUpperBarStartShift)
                     upBarShift = SELECT.length() / 2;
@@ -225,7 +220,7 @@ public class QueryPlanVisualizer {
                         "%1$s(%2$s),card:%3$d",
                         ORDERBY,
                         children[0].getTupleDesc().getFieldName(
-                                o.getOrderByField()),o.getEstimatedCardinality());
+                                o.getOrderByField()), o.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (ORDERBY.length() / 2 > parentUpperBarStartShift)
                     upBarShift = ORDERBY.length() / 2;
@@ -247,7 +242,7 @@ public class QueryPlanVisualizer {
                 while (it.hasNext())
                     fields.append(it.next().fieldName).append(",");
                 fields = new StringBuilder(fields.substring(0, fields.length() - 1));
-                thisNode.text = String.format("%1$s(%2$s),card:%3$d", PROJECT, fields.toString(),p.getEstimatedCardinality());
+                thisNode.text = String.format("%1$s(%2$s),card:%3$d", PROJECT, fields.toString(), p.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (PROJECT.length() / 2 > parentUpperBarStartShift)
                     upBarShift = PROJECT.length() / 2;
@@ -262,18 +257,17 @@ public class QueryPlanVisualizer {
                                 - currentStartPosition);
                 thisNode.leftChild = child;
                 thisNode.height = currentDepth;
-            }
-            else if (plan.getClass().getSuperclass().getSuperclass().getSimpleName().equals("Exchange")) {
-                String name="Exchange";
-                int card=0;
+            } else if (plan.getClass().getSuperclass().getSuperclass().getSimpleName().equals("Exchange")) {
+                String name = "Exchange";
+                int card = 0;
                 try {
                     name = (String) plan.getClass().getMethod("getName").invoke(plan);
                     card = (Integer) plan.getClass().getMethod("getEstimatedCardinality").invoke(plan);
                 } catch (Exception e) {
                     e.printStackTrace();
-                } 
+                }
 
-                thisNode.text = String.format("%1$s,card:%2$d", name,card);
+                thisNode.text = String.format("%1$s,card:%2$d", name, card);
                 int upBarShift = parentUpperBarStartShift;
                 if (name.length() / 2 > parentUpperBarStartShift)
                     upBarShift = name.length() / 2;
@@ -285,7 +279,7 @@ public class QueryPlanVisualizer {
                     thisNode.textStartPosition = thisNode.upBarPosition
                             - name.length() / 2;
                     thisNode.width = thisNode.textStartPosition + thisNode.text.length()
-                                    - currentStartPosition;
+                            - currentStartPosition;
                 } else {
                     thisNode.upBarPosition = child.upBarPosition;
                     thisNode.textStartPosition = thisNode.upBarPosition
@@ -296,19 +290,17 @@ public class QueryPlanVisualizer {
                     thisNode.leftChild = child;
                 }
                 thisNode.height = currentDepth;
-            }
-            else if (plan.getClass().getName().equals("simpledb.execution.Rename"))
-            {
-                String newName=null;
-                int fieldIdx=0;
+            } else if (plan.getClass().getName().equals("simpledb.execution.Rename")) {
+                String newName = null;
+                int fieldIdx = 0;
                 try {
-                    newName=(String) plan.getClass().getMethod("newName", (Class<?>[])null).invoke(plan);
-                    fieldIdx = (Integer) plan.getClass().getMethod("renamedField", (Class<?>[])null).invoke(plan);
+                    newName = (String) plan.getClass().getMethod("newName", (Class<?>[]) null).invoke(plan);
+                    fieldIdx = (Integer) plan.getClass().getMethod("renamedField", (Class<?>[]) null).invoke(plan);
                 } catch (Exception e) {
                     e.printStackTrace();
-                } 
+                }
                 String oldName = plan.getChildren()[0].getTupleDesc().getFieldName(fieldIdx);
-                thisNode.text = String.format("%1$s,%2$s->%3$s,card:%4$d", RENAME,oldName,newName,plan.getEstimatedCardinality());
+                thisNode.text = String.format("%1$s,%2$s->%3$s,card:%4$d", RENAME, oldName, newName, plan.getEstimatedCardinality());
                 int upBarShift = parentUpperBarStartShift;
                 if (RENAME.length() / 2 > parentUpperBarStartShift)
                     upBarShift = RENAME.length() / 2;
@@ -320,7 +312,7 @@ public class QueryPlanVisualizer {
                     thisNode.textStartPosition = thisNode.upBarPosition
                             - RENAME.length() / 2;
                     thisNode.width = thisNode.textStartPosition + thisNode.text.length()
-                                    - currentStartPosition;
+                            - currentStartPosition;
                 } else {
                     thisNode.upBarPosition = child.upBarPosition;
                     thisNode.textStartPosition = thisNode.upBarPosition

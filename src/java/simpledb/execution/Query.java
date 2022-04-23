@@ -1,21 +1,21 @@
 package simpledb.execution;
 
-import simpledb.optimizer.LogicalPlan;
-import simpledb.transaction.TransactionAbortedException;
-import simpledb.transaction.TransactionId;
 import simpledb.common.DbException;
+import simpledb.optimizer.LogicalPlan;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
+import simpledb.transaction.TransactionAbortedException;
+import simpledb.transaction.TransactionId;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.NoSuchElementException;
 
 /**
  * Query is a wrapper class to manage the execution of queries. It takes a query
  * plan in the form of a high level OpIterator (built by initiating the
  * constructors of query plans) and runs it as a part of a specified
  * transaction.
- * 
+ *
  * @author Sam Madden
  */
 
@@ -68,7 +68,9 @@ public class Query implements Serializable {
         return this.op.getTupleDesc();
     }
 
-    /** @return true if there are more tuples remaining. */
+    /**
+     * @return true if there are more tuples remaining.
+     */
     public boolean hasNext() throws DbException, TransactionAbortedException {
         return op.hasNext();
     }
@@ -76,14 +78,11 @@ public class Query implements Serializable {
     /**
      * Returns the next tuple, or throws NoSuchElementException if the iterator
      * is closed.
-     * 
+     *
      * @return The next tuple in the iterator
-     * @throws DbException
-     *             If there is an error in the database system
-     * @throws NoSuchElementException
-     *             If the iterator has finished iterating
-     * @throws TransactionAbortedException
-     *             If the transaction is aborted (e.g., due to a deadlock)
+     * @throws DbException                 If there is an error in the database system
+     * @throws NoSuchElementException      If the iterator has finished iterating
+     * @throws TransactionAbortedException If the transaction is aborted (e.g., due to a deadlock)
      */
     public Tuple next() throws DbException, NoSuchElementException,
             TransactionAbortedException {
@@ -93,7 +92,9 @@ public class Query implements Serializable {
         return op.next();
     }
 
-    /** Close the iterator */
+    /**
+     * Close the iterator
+     */
     public void close() {
         op.close();
         started = false;

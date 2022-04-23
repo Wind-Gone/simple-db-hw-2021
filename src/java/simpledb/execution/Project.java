@@ -1,12 +1,13 @@
 package simpledb.execution;
 
-import simpledb.transaction.TransactionAbortedException;
-import simpledb.common.Type;
 import simpledb.common.DbException;
+import simpledb.common.Type;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
+import simpledb.transaction.TransactionAbortedException;
 
-import java.util.*;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Project is an operator that implements a relational projection.

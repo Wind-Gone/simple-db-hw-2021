@@ -1,11 +1,11 @@
 package simpledb.execution;
 
-import simpledb.transaction.TransactionAbortedException;
 import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
+import simpledb.transaction.TransactionAbortedException;
 
-import java.util.*;
+import java.util.NoSuchElementException;
 
 /**
  * Filter is an operator that implements a relational select.
@@ -17,11 +17,9 @@ public class Filter extends Operator {
     /**
      * Constructor accepts a predicate to apply and a child operator to read
      * tuples to filter from.
-     * 
-     * @param p
-     *            The predicate to filter tuples with
-     * @param child
-     *            The child operator
+     *
+     * @param p     The predicate to filter tuples with
+     * @param child The child operator
      */
     public Filter(Predicate p, OpIterator child) {
         // some code goes here
@@ -54,9 +52,9 @@ public class Filter extends Operator {
      * AbstractDbIterator.readNext implementation. Iterates over tuples from the
      * child operator, applying the predicate to them and returning those that
      * pass the predicate (i.e. for which the Predicate.filter() returns true.)
-     * 
+     *
      * @return The next tuple that passes the filter, or null if there are no
-     *         more tuples
+     * more tuples
      * @see Predicate#filter
      */
     protected Tuple fetchNext() throws NoSuchElementException,

@@ -19,15 +19,11 @@ public class Insert extends Operator {
     /**
      * Constructor.
      *
-     * @param t
-     *            The transaction running the insert.
-     * @param child
-     *            The child operator from which to read tuples to be inserted.
-     * @param tableId
-     *            The table in which to insert tuples.
-     * @throws DbException
-     *             if TupleDesc of child differs from table into which we are to
-     *             insert.
+     * @param t       The transaction running the insert.
+     * @param child   The child operator from which to read tuples to be inserted.
+     * @param tableId The table in which to insert tuples.
+     * @throws DbException if TupleDesc of child differs from table into which we are to
+     *                     insert.
      */
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
@@ -60,7 +56,7 @@ public class Insert extends Operator {
      * duplicate before inserting it.
      *
      * @return A 1-field tuple containing the number of inserted records, or
-     *         null if called more than once.
+     * null if called more than once.
      * @see Database#getBufferPool
      * @see BufferPool#insertTuple
      */

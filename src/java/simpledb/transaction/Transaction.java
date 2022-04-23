@@ -2,7 +2,7 @@ package simpledb.transaction;
 
 import simpledb.common.Database;
 
-import java.io.*;
+import java.io.IOException;
 
 /**
  * Transaction encapsulates information about the state of
@@ -17,7 +17,9 @@ public class Transaction {
         tid = new TransactionId();
     }
 
-    /** Start the transaction running */
+    /**
+     * Start the transaction running
+     */
     public void start() {
         started = true;
         try {
@@ -31,31 +33,37 @@ public class Transaction {
         return tid;
     }
 
-    /** Finish the transaction */
+    /**
+     * Finish the transaction
+     */
     public void commit() throws IOException {
         transactionComplete(false);
     }
 
-    /** Finish the transaction */
+    /**
+     * Finish the transaction
+     */
     public void abort() throws IOException {
         transactionComplete(true);
     }
 
-    /** Handle the details of transaction commit / abort */
+    /**
+     * Handle the details of transaction commit / abort
+     */
     public void transactionComplete(boolean abort) throws IOException {
 
         if (started) {
             //write abort log record and rollback transaction
             if (abort) {
                 Database.getLogFile().logAbort(tid); //does rollback too
-            } 
+            }
 
             // Release locks and flush pages if needed
             Database.getBufferPool().transactionComplete(tid, !abort); // release locks
 
             // write commit log record
             if (!abort) {
-            	Database.getLogFile().logCommit(tid);
+                Database.getLogFile().logCommit(tid);
             }
 
             //setting this here means we could possibly write multiple abort records -- OK?

@@ -1,9 +1,10 @@
 package simpledb.storage;
 
-import simpledb.execution.Predicate;
 import simpledb.common.Type;
+import simpledb.execution.Predicate;
 
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Instance of Field that stores a single integer.

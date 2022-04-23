@@ -1,9 +1,9 @@
 package simpledb.execution;
 
-import simpledb.transaction.TransactionAbortedException;
 import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
+import simpledb.transaction.TransactionAbortedException;
 
 import java.util.*;
 
@@ -22,13 +22,10 @@ public class HashEquiJoin extends Operator {
     /**
      * Constructor. Accepts to children to join and the predicate to join them
      * on
-     * 
-     * @param p
-     *            The predicate to use to join the children
-     * @param child1
-     *            Iterator for the left(outer) relation to join
-     * @param child2
-     *            Iterator for the right(inner) relation to join
+     *
+     * @param p      The predicate to use to join the children
+     * @param child1 Iterator for the left(outer) relation to join
+     * @param child2 Iterator for the right(inner) relation to join
      */
     public HashEquiJoin(JoinPredicate p, OpIterator child1, OpIterator child2) {
         this.pred = p;
@@ -44,17 +41,15 @@ public class HashEquiJoin extends Operator {
     public TupleDesc getTupleDesc() {
         return comboTD;
     }
-    
-    public String getJoinField1Name()
-    {
-	return this.child1.getTupleDesc().getFieldName(this.pred.getField1());
+
+    public String getJoinField1Name() {
+        return this.child1.getTupleDesc().getFieldName(this.pred.getField1());
     }
 
-    public String getJoinField2Name()
-    {
-	return this.child2.getTupleDesc().getFieldName(this.pred.getField2());
+    public String getJoinField2Name() {
+        return this.child2.getTupleDesc().getFieldName(this.pred.getField2());
     }
-    
+
     final Map<Object, List<Tuple>> map = new HashMap<>();
     public final static int MAP_SIZE = 20000;
 
@@ -84,9 +79,9 @@ public class HashEquiJoin extends Operator {
         super.close();
         child2.close();
         child1.close();
-        this.t1=null;
-        this.t2=null;
-        this.listIt=null;
+        this.t1 = null;
+        this.t2 = null;
+        this.listIt = null;
         this.map.clear();
     }
 
@@ -111,7 +106,7 @@ public class HashEquiJoin extends Operator {
      * <p>
      * For example, if one tuple is {1,2,3} and the other tuple is {1,5,6},
      * joined on equality of the first column, then this returns {1,2,3,1,5,6}.
-     * 
+     *
      * @return The next matching tuple.
      * @see JoinPredicate#filter
      */
@@ -170,5 +165,5 @@ public class HashEquiJoin extends Operator {
         this.child1 = children[0];
         this.child2 = children[1];
     }
-    
+
 }

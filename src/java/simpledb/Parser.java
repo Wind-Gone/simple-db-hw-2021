@@ -1,11 +1,6 @@
 package simpledb;
 
 import Zql.*;
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
 import jline.ArgumentCompletor;
 import jline.ConsoleReader;
 import jline.SimpleCompletor;
@@ -21,6 +16,11 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionId;
+
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class Parser {
     static boolean explain = false;
@@ -47,6 +47,11 @@ public class Parser {
 
         throw new simpledb.ParsingException("Unknown predicate " + s);
     }
+
+    // Basic SQL completions
+    public static final String[] SQL_COMMANDS = {"select", "from", "where",
+            "group by", "max(", "min(", "avg(", "count", "rollback", "commit",
+            "insert", "delete", "values", "into"};
 
     void processExpression(TransactionId tid, ZExpression wx, LogicalPlan lp)
             throws simpledb.ParsingException, IOException, ParseException {
@@ -76,11 +81,11 @@ public class Parser {
             Predicate.Op op = getOp(wx.getOperator());
 
             boolean op1const = ops.get(0) instanceof ZConstant; // otherwise
-                                                                      // is a
-                                                                      // Query
+            // is a
+            // Query
             boolean op2const = ops.get(1) instanceof ZConstant; // otherwise
-                                                                      // is a
-                                                                      // Query
+            // is a
+            // Query
             if (op1const && op2const) {
                 isJoin = ((ZConstant) ops.get(0)).getType() == ZConstant.COLUMNNAME
                         && ((ZConstant) ops.get(1)).getType() == ZConstant.COLUMNNAME;
@@ -137,6 +142,9 @@ public class Parser {
 
     }
 
+    private Transaction curtrans = null;
+    private boolean inUserTrans = false;
+
     public LogicalPlan parseQueryLogicalPlan(TransactionId tid, ZQuery q)
             throws IOException, Zql.ParseException, simpledb.ParsingException {
         @SuppressWarnings("unchecked")
@@ -149,12 +157,12 @@ public class Parser {
             try {
 
                 int id = Database.getCatalog().getTableId(fromIt.getTable()); // will
-                                                                              // fall
-                                                                              // through
-                                                                              // if
-                                                                              // table
-                                                                              // doesn't
-                                                                              // exist
+                // fall
+                // through
+                // if
+                // table
+                // doesn't
+                // exist
                 String name;
 
                 if (fromIt.getAlias() != null)
@@ -236,8 +244,8 @@ public class Parser {
             } else {
                 if (groupByField != null
                         && !(groupByField.equals(si.getTable() + "."
-                                + si.getColumn()) || groupByField.equals(si
-                                .getColumn()))) {
+                        + si.getColumn()) || groupByField.equals(si
+                        .getColumn()))) {
                     throw new simpledb.ParsingException("Non-aggregate field "
                             + si.getColumn()
                             + " does not appear in GROUP BY list.");
@@ -275,9 +283,6 @@ public class Parser {
         return lp;
     }
 
-    private Transaction curtrans = null;
-    private boolean inUserTrans = false;
-
     public Query handleQueryStatement(ZQuery s, TransactionId tId)
             throws IOException,
             simpledb.ParsingException, Zql.ParseException {
@@ -306,7 +311,7 @@ public class Parser {
                 c = Class.forName("simpledb.optimizer.QueryPlanVisualizer");
                 m = c.getMethod(
                         "printQueryPlanTree", OpIterator.class, System.out.getClass());
-                m.invoke(c.newInstance(), physicalPlan,System.out);
+                m.invoke(c.newInstance(), physicalPlan, System.out);
             } catch (ClassNotFoundException | SecurityException ignored) {
             } catch (NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
                 e.printStackTrace();
@@ -322,7 +327,7 @@ public class Parser {
         int tableId;
         try {
             tableId = Database.getCatalog().getTableId(s.getTable()); // will
-                                                                      // fall
+            // fall
             // through if
             // table
             // doesn't
@@ -388,39 +393,6 @@ public class Parser {
         Query insertQ = new Query(tId);
         insertQ.setPhysicalPlan(new Insert(tId, newTups, tableId));
         return insertQ;
-    }
-
-    public Query handleDeleteStatement(ZDelete s, TransactionId tid)
-            throws
-            simpledb.ParsingException, IOException, ParseException {
-        int id;
-        try {
-            id = Database.getCatalog().getTableId(s.getTable()); // will fall
-                                                                 // through if
-                                                                 // table
-                                                                 // doesn't
-                                                                 // exist
-        } catch (NoSuchElementException e) {
-            throw new simpledb.ParsingException("Unknown table : "
-                    + s.getTable());
-        }
-        String name = s.getTable();
-        Query sdbq = new Query(tid);
-
-        LogicalPlan lp = new LogicalPlan();
-        lp.setQuery(s.toString());
-
-        lp.addScan(id, name);
-        if (s.getWhere() != null)
-            processExpression(tid, (ZExpression) s.getWhere(), lp);
-        lp.addProjectField("null.*", null);
-
-        OpIterator op = new Delete(tid, lp.physicalPlan(tid,
-                TableStats.getStatsMap(), false));
-        sdbq.setPhysicalPlan(op);
-
-        return sdbq;
-
     }
 
     public void handleTransactStatement(ZTransactStmt s)
@@ -564,10 +536,38 @@ public class Parser {
         }
     }
 
-    // Basic SQL completions
-    public static final String[] SQL_COMMANDS = { "select", "from", "where",
-            "group by", "max(", "min(", "avg(", "count", "rollback", "commit",
-            "insert", "delete", "values", "into" };
+    public Query handleDeleteStatement(ZDelete s, TransactionId tid)
+            throws
+            simpledb.ParsingException, IOException, ParseException {
+        int id;
+        try {
+            id = Database.getCatalog().getTableId(s.getTable()); // will fall
+            // through if
+            // table
+            // doesn't
+            // exist
+        } catch (NoSuchElementException e) {
+            throw new simpledb.ParsingException("Unknown table : "
+                    + s.getTable());
+        }
+        String name = s.getTable();
+        Query sdbq = new Query(tid);
+
+        LogicalPlan lp = new LogicalPlan();
+        lp.setQuery(s.toString());
+
+        lp.addScan(id, name);
+        if (s.getWhere() != null)
+            processExpression(tid, (ZExpression) s.getWhere(), lp);
+        lp.addProjectField("null.*", null);
+
+        OpIterator op = new Delete(tid, lp.physicalPlan(tid,
+                TableStats.getStatsMap(), false));
+        sdbq.setPhysicalPlan(op);
+
+        return sdbq;
+
+    }
 
     public static void main(String[] argv) throws IOException {
 
@@ -690,8 +690,8 @@ public class Parser {
 
 class TupleArrayIterator implements OpIterator {
     /**
-	 *
-	 */
+     *
+     */
     private static final long serialVersionUID = 1L;
     final List<Tuple> tups;
     Iterator<Tuple> it = null;
@@ -704,7 +704,9 @@ class TupleArrayIterator implements OpIterator {
         it = tups.iterator();
     }
 
-    /** @return true if the iterator has more items. */
+    /**
+     * @return true if the iterator has more items.
+     */
     public boolean hasNext() {
         return it.hasNext();
     }
@@ -714,7 +716,7 @@ class TupleArrayIterator implements OpIterator {
      * from a child operator or an access method).
      *
      * @return The next tuple in the iterator, or null if there are no more
-     *         tuples.
+     * tuples.
      */
     public Tuple next() throws
             NoSuchElementException {
@@ -723,7 +725,6 @@ class TupleArrayIterator implements OpIterator {
 
     /**
      * Resets the iterator to the start.
-     *
      */
     public void rewind() {
         it = tups.iterator();
