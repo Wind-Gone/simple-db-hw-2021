@@ -26,11 +26,12 @@ public class BufferPool {
      */
     public static final int DEFAULT_PAGES = 50;
 
-    private static int pageSize = DEFAULT_PAGE_SIZE;
     /**
      * Bytes per page, including header.
      */
     private static final int DEFAULT_PAGE_SIZE = 4096;
+
+    private static int pageSize = DEFAULT_PAGE_SIZE;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.

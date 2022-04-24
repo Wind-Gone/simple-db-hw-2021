@@ -24,8 +24,9 @@ public class QueryPlanVisualizer {
         if (root == null)
             return 0;
 
-        if (!(root instanceof Operator o))
+        if (!(root instanceof Operator))
             return 2;
+        Operator o = (Operator) root;
         OpIterator[] children = o.getChildren();
 
         if (o instanceof Join || o instanceof HashEquiJoin) {
@@ -64,7 +65,8 @@ public class QueryPlanVisualizer {
         int adjustDepth = currentDepth == 0 ? -1 : 0;
         SubTreeDescriptor thisNode = new SubTreeDescriptor(null);
 
-        if (queryPlan instanceof SeqScan s) {
+        if (queryPlan instanceof SeqScan) {
+            SeqScan s = (SeqScan) queryPlan;
             String tableName = s.getTableName();
             String alias = s.getAlias();
 //            TupleDesc td = s.getTupleDesc();

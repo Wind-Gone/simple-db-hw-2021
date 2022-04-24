@@ -35,13 +35,18 @@ public class BTreePageId implements PageId {
     }
 
     static public String categToString(int categ) {
-        return switch (categ) {
-            case ROOT_PTR -> "ROOT_PTR";
-            case INTERNAL -> "INTERNAL";
-            case LEAF -> "LEAF";
-            case HEADER -> "HEADER";
-            default -> throw new IllegalArgumentException("categ");
-        };
+        switch (categ) {
+            case ROOT_PTR:
+                return "ROOT_PTR";
+            case INTERNAL:
+                return "INTERNAL";
+            case LEAF:
+                return "LEAF";
+            case HEADER:
+                return "HEADER";
+            default:
+                throw new IllegalArgumentException("categ");
+        }
     }
 
     /**
