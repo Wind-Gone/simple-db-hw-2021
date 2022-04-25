@@ -1,11 +1,15 @@
 package simpledb.storage;
 
+import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -32,6 +36,8 @@ public class BufferPool {
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
+    private ConcurrentHashMap<PageId, Page> pages;              // pages stored in BufferPool
+    private ReadWriteLock lock;                                 // control read/write access privilege
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -40,6 +46,8 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
+        pages = new ConcurrentHashMap<>(numPages);
+        lock = new ReentrantReadWriteLock();
     }
 
     public static int getPageSize() {
@@ -74,7 +82,17 @@ public class BufferPool {
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        lock.readLock().lock();
+        Page targetPage = pages.get(pid);
+        if (targetPage == null) {
+            if (pages.size() >= DEFAULT_PAGES)
+                evictPage();
+            DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            targetPage = dbFile.readPage(pid);
+            pages.put(pid, targetPage);
+        }
+        lock.readLock().unlock();
+        return targetPage;
     }
 
     /**

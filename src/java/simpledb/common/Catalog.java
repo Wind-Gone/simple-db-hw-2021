@@ -8,10 +8,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The Catalog keeps track of all available tables in the database and their
@@ -23,6 +20,7 @@ import java.util.UUID;
  * @Threadsafe
  */
 public class Catalog {
+    private TreeMap<Integer, Table> tables;
 
     /**
      * Constructor.
@@ -30,6 +28,20 @@ public class Catalog {
      */
     public Catalog() {
         // some code goes here
+        tables = new TreeMap<>();
+    }
+
+    public static class Table {
+        private final DbFile dbFile;
+        private final String name;
+        private final String primaryKeyName;
+
+        public Table(DbFile dbFile, String name, String primaryKeyName) {
+            this.dbFile = dbFile;
+            this.name = name;
+            this.primaryKeyName = primaryKeyName;
+        }
+
     }
 
     /**
@@ -44,6 +56,7 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        tables.put(file.getId(), new Table(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -69,7 +82,11 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+        for (Integer tableID : tables.keySet()) {
+            if (tables.get(tableID).name.equalsIgnoreCase(name))
+                return tableID;
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -81,7 +98,10 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        TupleDesc tupleDesc = tables.get(tableid).dbFile.getTupleDesc();
+        if (tupleDesc != null)
+            return tupleDesc;
+        throw new NoSuchElementException();
     }
 
     /**
@@ -93,22 +113,22 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        return tables.get(tableid).dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
         // some code goes here
-        return null;
+        return tables.get(tableid).primaryKeyName;
     }
 
     public Iterator<Integer> tableIdIterator() {
         // some code goes here
-        return null;
+        return tables.keySet().iterator();
     }
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+        return tables.get(id).name;
     }
 
     /**
@@ -116,6 +136,7 @@ public class Catalog {
      */
     public void clear() {
         // some code goes here
+        tables.clear();
     }
 
     /**
