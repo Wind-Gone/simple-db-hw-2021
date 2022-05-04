@@ -1,7 +1,11 @@
 package simpledb.execution;
 
 import simpledb.common.Type;
-import simpledb.storage.Tuple;
+import simpledb.storage.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Knows how to compute some aggregate over a set of StringFields.
@@ -9,6 +13,12 @@ import simpledb.storage.Tuple;
 public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+    private int gbfield;
+    private int afield;
+    private Type gbfieldType;
+    private Op aggrOp;
+    private final HashMap<Field, Integer> aggrMap = new HashMap<>();                           // IF GROUP, We arrange values by different field;
+    private int ngroupValue;
 
     /**
      * Aggregate constructor
@@ -22,6 +32,12 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+        this.gbfield = gbfield;
+        this.gbfieldType = gbfieldtype;
+        this.afield = afield;
+        this.aggrOp = what;
+        if (aggrOp != Op.COUNT)
+            throw new IllegalArgumentException("what != COUNT");
     }
 
     /**
@@ -31,6 +47,13 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+        if (gbfieldType == null) {
+            ngroupValue++;
+        } else {
+            Field field = tup.getField(gbfield);
+            aggrMap.putIfAbsent(field, 0);
+            aggrMap.put(field, aggrMap.get(field) + 1);
+        }
     }
 
     /**
@@ -43,7 +66,22 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+        TupleDesc tupleDesc;
+        ArrayList<Tuple> tuples = new ArrayList<>();
+        if (gbfieldType == null) {
+            tupleDesc = new TupleDesc(new Type[]{Type.INT_TYPE});
+            Tuple tuple = new Tuple(tupleDesc);
+            tuple.setField(0, new IntField(ngroupValue));
+            tuples.add(tuple);
+        } else {
+            tupleDesc = new TupleDesc(new Type[]{gbfieldType, Type.INT_TYPE});
+            for (Map.Entry<Field, Integer> fieldEntry : aggrMap.entrySet()) {
+                Tuple tuple = new Tuple(tupleDesc);
+                tuple.setField(0, fieldEntry.getKey());
+                tuple.setField(1, new IntField(fieldEntry.getValue()));
+                tuples.add(tuple);
+            }
+        }
+        return new TupleIterator(tupleDesc, tuples);
     }
-
 }

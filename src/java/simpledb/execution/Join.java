@@ -17,7 +17,7 @@ public class Join extends Operator {
     private final JoinPredicate joinPredicate;
     private OpIterator child1;
     private OpIterator child2;
-    private ArrayList<Tuple> joinTuples;
+    private final ArrayList<Tuple> joinTuples;            // auxiliary array
     private int index;
 
     /**
