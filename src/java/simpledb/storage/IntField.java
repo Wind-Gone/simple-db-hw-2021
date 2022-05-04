@@ -53,9 +53,11 @@ public class IntField implements Field {
      * @see Field#compare
      */
     public boolean compare(Predicate.Op op, Field val) {
-
-        IntField iVal = (IntField) val;
-
+        IntField iVal = null;
+        try {
+            iVal = (IntField) val;
+        } catch (Exception ignored) {
+        }
         switch (op) {
             case EQUALS:
             case LIKE:
@@ -71,7 +73,6 @@ public class IntField implements Field {
             case LESS_THAN_OR_EQ:
                 return value <= iVal.value;
         }
-
         return false;
     }
 
