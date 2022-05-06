@@ -7,6 +7,7 @@ import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -63,6 +64,7 @@ public class BufferPool {
     public static void resetPageSize() {
         BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
+
 
     /**
      * Retrieve the specified page with the associated permissions.
@@ -158,7 +160,14 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
+        DbFile file = Database.getCatalog().getDatabaseFile(tableId);
+        ArrayList<Page> arrayList = (ArrayList<Page>) file.insertTuple(tid, t);
+        for (Page p : arrayList) {
+            p.markDirty(true, tid);
+            if (pages.size() > DEFAULT_PAGES)
+                evictPage();
+            pages.put(p.getId(), p);        // Important!
+        }
     }
 
     /**
@@ -177,7 +186,17 @@ public class BufferPool {
     public void deleteTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
+        PageId pid = t.getRecordId().getPageId();
+        if (pid == null)
+            return;
+        DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        ArrayList<Page> arrayList = (ArrayList<Page>) file.deleteTuple(tid, t);
+        for (Page p : arrayList) {
+            p.markDirty(true, tid);
+            if (pages.size() > DEFAULT_PAGES)
+                evictPage();
+            pages.put(p.getId(), p);
+        }
     }
 
     /**
