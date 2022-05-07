@@ -6,7 +6,9 @@ import simpledb.common.DbException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -28,6 +30,7 @@ public class HeapPage implements Page {
     private final Byte oldDataLock = (byte) 0;
     private boolean dirty;
     private TransactionId dirtyTid;
+    private long lastAccessedTime = 0;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -66,7 +69,7 @@ public class HeapPage implements Page {
             e.printStackTrace();
         }
         dis.close();
-
+        this.lastAccessedTime = System.nanoTime();
         setBeforeImage();
     }
 
@@ -350,24 +353,17 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return new Iterator<Tuple>() {
-            private int remainSlots = 0;
-
-            @Override
-            public boolean hasNext() {
-                return remainSlots + getNumEmptySlots() < numSlots;
+        List<Tuple> tupleList = new ArrayList<>();
+        for (int i = 0; i < numSlots; i++) {
+            if (isSlotUsed(i)) {
+                tupleList.add(this.tuples[i]);
             }
-
-            @Override
-            public Tuple next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-                while (!isSlotUsed(remainSlots))
-                    remainSlots += 1;
-                return tuples[remainSlots++];
-            }
-        };
+        }
+        return tupleList.iterator();
     }
 
+    public long getLastAccessedTime() {
+        return lastAccessedTime;
+    }
 }
 

@@ -162,6 +162,11 @@ public class BTreeInternalPage extends BTreePage {
         }
     }
 
+    @Override
+    public long getLastAccessedTime() {
+        return 0;
+    }
+
     /**
      * Read keys from the source file.
      */

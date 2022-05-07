@@ -3,11 +3,14 @@ package simpledb.storage;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;
+import simpledb.storage.evict.EvictStrategy;
+import simpledb.storage.evict.LRU;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -37,8 +40,9 @@ public class BufferPool {
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
-    private ConcurrentHashMap<PageId, Page> pages;              // pages stored in BufferPool
-    private ReadWriteLock lock;                                 // control read/write access privilege
+    private final ConcurrentHashMap<PageId, Page> pages;              // pages stored in BufferPool
+    private final ReadWriteLock lock;                                 // control read/write access privilege
+    private EvictStrategy evictStrategy;                              // evict strategy
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -49,6 +53,7 @@ public class BufferPool {
         // some code goes here
         pages = new ConcurrentHashMap<>(numPages);
         lock = new ReentrantReadWriteLock();
+        evictStrategy = new LRU();
     }
 
     public static int getPageSize() {
@@ -207,7 +212,13 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-
+        for (Map.Entry<PageId, Page> entry : pages.entrySet()) {
+            PageId pageId = entry.getKey();
+            Page page = entry.getValue();
+            if (page.isDirty() != null) {
+                flushPage(pageId);
+            }
+        }
     }
 
     /**
@@ -222,6 +233,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        pages.remove(pid);
     }
 
     /**
@@ -229,9 +241,23 @@ public class BufferPool {
      *
      * @param pid an ID indicating the page to flush
      */
-    private synchronized void flushPage(PageId pid) throws IOException {
+    public synchronized void flushPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        Page flushedPage = pages.get(pid);
+        // check the page is whether dirty
+        try {
+            if (flushedPage.isDirty() != null) {
+                Database.getLogFile().logWrite(flushedPage.isDirty(), flushedPage.getBeforeImage(), flushedPage);
+                Database.getLogFile().force();
+            }
+            int tableId = pid.getTableId();
+            DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);     // find the dbfile
+            dbFile.writePage(flushedPage);                                      // write the page to dbfile
+            flushedPage.markDirty(false, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -247,8 +273,10 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        PageId evictPageId = evictStrategy.getEvictPageId(pages);
+        if (evictPageId == null) throw new DbException("There are no satisfying pages to evict in the bp");
+        this.flushPage(evictPageId);
+        discardPage(evictPageId);
     }
-
 }
+

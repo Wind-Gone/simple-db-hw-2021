@@ -131,6 +131,11 @@ public class BTreeHeaderPage implements Page {
         }
     }
 
+    @Override
+    public long getLastAccessedTime() {
+        return 0;
+    }
+
     /**
      * @return the PageId associated with this page.
      */

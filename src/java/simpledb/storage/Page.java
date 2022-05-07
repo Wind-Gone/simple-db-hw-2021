@@ -59,4 +59,6 @@ public interface Page {
      * copy current content to the before image.
      */
     void setBeforeImage();
+
+    long getLastAccessedTime();
 }

@@ -152,6 +152,11 @@ public class BTreeLeafPage extends BTreePage {
         }
     }
 
+    @Override
+    public long getLastAccessedTime() {
+        return 0;
+    }
+
     /**
      * Read tuples from the source file.
      */

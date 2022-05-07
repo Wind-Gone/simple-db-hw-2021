@@ -86,6 +86,11 @@ public class BTreeRootPtrPage implements Page {
         oldData = getPageData().clone();
     }
 
+    @Override
+    public long getLastAccessedTime() {
+        return 0;
+    }
+
     /**
      * @return the PageId associated with this page.
      */
