@@ -41,18 +41,15 @@ public class JoinOptimizer {
      * @param plan1 The left join node's child
      * @param plan2 The right join node's child
      */
-    public static OpIterator instantiateJoin(LogicalJoinNode lj,
-                                             OpIterator plan1, OpIterator plan2) throws ParsingException {
+    public static OpIterator instantiateJoin(LogicalJoinNode lj, OpIterator plan1, OpIterator plan2) throws ParsingException {
 
-        int t1id = 0, t2id = 0;
+        int t1id, t2id;
         OpIterator j;
-
         try {
             t1id = plan1.getTupleDesc().fieldNameToIndex(lj.f1QuantifiedName);
         } catch (NoSuchElementException e) {
             throw new ParsingException("Unknown field " + lj.f1QuantifiedName);
         }
-
         if (lj instanceof LogicalSubplanJoinNode) {
             t2id = 0;
         } else {
@@ -66,9 +63,7 @@ public class JoinOptimizer {
         }
 
         JoinPredicate p = new JoinPredicate(t1id, lj.p, t2id);
-
         if (lj.p == Predicate.Op.EQUALS) {
-
             try {
                 // dynamically load HashEquiJoin -- if it doesn't exist, just
                 // fall back on regular join
@@ -82,7 +77,6 @@ public class JoinOptimizer {
         } else {
             j = new Join(p, plan1, plan2);
         }
-
         return j;
 
     }
@@ -95,8 +89,32 @@ public class JoinOptimizer {
                                                    String field2PureName, int card1, int card2, boolean t1pkey,
                                                    boolean t2pkey, Map<String, TableStats> stats,
                                                    Map<String, Integer> tableAliasToId) {
-        int card = 1;
+        int card;
+        double fixedFraction = 0.3;
         // some code goes here
+        switch (joinOp) {
+            case EQUALS:
+                if (t1pkey && !t2pkey) {
+                    card = card2;
+                } else if (!t1pkey && t2pkey) {
+                    card = card1;
+                } else if (!t1pkey) {
+                    card = Math.max(card1, card2);
+                } else card = Math.min(card1, card2);
+                break;
+            case NOT_EQUALS:
+                if (t1pkey && !t2pkey) {
+                    card = card1 * card2 - card2;
+                } else if (!t1pkey && t2pkey) {
+                    card = card1 * card2 - card1;
+                } else if (!t1pkey) {
+                    card = card1 * card2 - Math.max(card1, card2);
+                } else card = card1 * card2 - Math.min(card1, card2);
+                break;
+            default:
+                card = (int) (fixedFraction * card1 * card2);
+                break;
+        }
         return card <= 0 ? 1 : card;
     }
 
@@ -131,7 +149,10 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            // When using nested loops joins, recall that the cost of a join between two tables t1 and t2 (where t1 is the outer) is simply:
+            // joincost(t1 join t2) = scancost(t1) + ntups(t1) x scancost(t2) //IO cost
+            // + ntups(t1) x ntups(t2)  //CPU cost
+            return cost1 + card1 * cost2 + card1 * card2;
         }
     }
 
@@ -172,9 +193,6 @@ public class JoinOptimizer {
     public <T> Set<Set<T>> enumerateSubsets(List<T> v, int size) {
         Set<Set<T>> els = new HashSet<>();
         els.add(new HashSet<>());
-        // Iterator<Set> it;
-        // long start = System.currentTimeMillis();
-
         for (int i = 0; i < size; i++) {
             Set<Set<T>> newels = new HashSet<>();
             for (Set<T> s : els) {
@@ -186,9 +204,7 @@ public class JoinOptimizer {
             }
             els = newels;
         }
-
         return els;
-
     }
 
     /**
@@ -211,10 +227,25 @@ public class JoinOptimizer {
             Map<String, TableStats> stats,
             Map<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-
-        // some code goes here
-        //Replace the following
-        return joins;
+        //  some code goes here
+        //  Replace the following
+        PlanCache planCache = new PlanCache();
+        for (int i = 1; i <= joins.size(); i++) {
+            for (Set<LogicalJoinNode> subset : enumerateSubsets(joins, i)) {
+                CostCard bestPlan = new CostCard();
+                bestPlan.cost = Double.MAX_VALUE;
+                for (LogicalJoinNode s_ : subset) {
+                    CostCard subPlan = computeCostAndCardOfSubplan(stats, filterSelectivities, s_, subset, bestPlan.cost, planCache);
+                    if (subPlan != null)
+                        bestPlan = subPlan;
+                }
+                planCache.addPlan(subset, bestPlan.cost, bestPlan.card, bestPlan.plan);
+            }
+        }
+        List<LogicalJoinNode> optOrder = planCache.getOrder(new HashSet<>(joins));
+        if (explain)
+            printJoins(optOrder, planCache, stats, filterSelectivities);
+        return optOrder;
     }
 
     // ===================== Private Methods =================================

@@ -87,7 +87,7 @@ public class LogicalJoinNode {
 
     @Override
     public String toString() {
-        return t1Alias + ":" + t2Alias;//+ ";" + f1 + " " + p + " " + f2;
+        return t1Alias + ":" + t2Alias;         //+ ";" + f1 + " " + p + " " + f2;
     }
 
     @Override

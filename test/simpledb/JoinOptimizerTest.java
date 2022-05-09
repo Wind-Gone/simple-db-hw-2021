@@ -226,7 +226,6 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
                 "SELECT * FROM " + tableName2 + " t1, " + tableName2
                         + " t2 WHERE t1.c8 = t2.c7;"),
                 new ArrayList<>());
-
         double cardinality;
 
         /*
