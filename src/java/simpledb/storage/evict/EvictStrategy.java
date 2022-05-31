@@ -1,5 +1,6 @@
 package simpledb.storage.evict;
 
+import simpledb.common.DbException;
 import simpledb.storage.Page;
 import simpledb.storage.PageId;
 
@@ -14,6 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface EvictStrategy {
 
-    PageId getEvictPageId(ConcurrentHashMap<PageId, Page> pages);                    // return the pageid which is to be evicted
+    PageId getEvictPageId(ConcurrentHashMap<PageId, Page> pages) throws DbException;                    // return the pageid which is to be evicted
 
 }
