@@ -342,7 +342,7 @@ public class BTreeLeafPage extends BTreePage {
 
         // shift records back or forward to fill empty slot and make room for new record
         // while keeping records in sorted order
-        int goodSlot = -1;
+        int goodSlot;
         if (emptySlot < lessOrEqKey) {
             for (int i = emptySlot; i < lessOrEqKey; i++) {
                 moveRecord(i + 1, i);

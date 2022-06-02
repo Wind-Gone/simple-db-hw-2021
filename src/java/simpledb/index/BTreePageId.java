@@ -111,11 +111,9 @@ public class BTreePageId implements PageId {
      */
     public int[] serialize() {
         int[] data = new int[3];
-
         data[0] = tableId;
         data[1] = pgNo;
         data[2] = pgcateg;
-
         return data;
     }
 
