@@ -474,6 +474,31 @@ public class LogFile {
             synchronized (this) {
                 preAppend();
                 // some code goes here
+                Set<PageId> pageIdSet = new HashSet<>();
+                Long offset = tidToFirstLogRecord.get(tid.getId());
+                raf.seek(offset);
+                // if file pointer is not the end
+                while (raf.getFilePointer() < raf.length()) {
+                    int cpType = raf.readInt();
+                    long cpTid = raf.readLong();
+                    if (cpType == UPDATE_RECORD) {
+                        Page beforeImage = readPageData(raf);
+                        Page afterImage = readPageData(raf);
+                        if (tid.getId() == cpTid && !pageIdSet.contains(beforeImage.getId())) {
+                            pageIdSet.add(beforeImage.getId());
+                            Database.getBufferPool().discardPage(beforeImage.getId());
+                            Database.getCatalog().getDatabaseFile(beforeImage.getId().getTableId()).writePage(beforeImage);
+                        }
+                    } else if (cpType == CHECKPOINT_RECORD) {
+                        int keysSize = raf.readInt();           // refer to logCheckpoint function
+                        while (keysSize-- > 0) {
+                            raf.readLong();
+                            raf.readLong();
+                        }
+                    }
+                    raf.readLong();
+                }
+                raf.seek(raf.length());
             }
         }
     }
@@ -503,6 +528,70 @@ public class LogFile {
             synchronized (this) {
                 recoveryUndecided = false;
                 // some code goes here
+                long latestCheckpoint = raf.readLong();
+                long pos = latestCheckpoint != NO_CHECKPOINT_ID ? latestCheckpoint : 0;
+                raf.seek(pos);
+                HashSet<Long> commitedTransactions = new HashSet<>();
+                // redo updates and build the set of loser transactions
+                while (raf.getFilePointer() < raf.length()) {
+                    int cpType = raf.readInt();
+                    switch (cpType) {
+                        case BEGIN_RECORD:          // logXactionBegin
+                            long tidBegin = raf.readLong();
+                            long offsetBegin = raf.readLong();
+                            this.tidToFirstLogRecord.put(tidBegin, offsetBegin);
+                            break;
+                        case UPDATE_RECORD:         // logWrite
+                            long tidUpdate = raf.readLong();
+                            Page beforeImage = readPageData(raf);
+                            Page afterImage = readPageData(raf);
+                            long offsetUpdate = raf.readLong();
+                            break;
+                        case COMMIT_RECORD:         // logCommit
+                            long tidCommit = raf.readLong();
+                            raf.skipBytes(LONG_SIZE);
+                            commitedTransactions.add(tidCommit);
+                            break;
+                        case ABORT_RECORD:         // logAbort
+                            raf.skipBytes(LONG_SIZE * 2);
+                            break;
+                        case CHECKPOINT_RECORD:    // logCheckpoint
+                            raf.skipBytes(LONG_SIZE);
+                            int keysSize = raf.readInt();
+                            while (keysSize-- > 0) {
+                                long activeTrxKey = raf.readLong();
+                                long activeTrxOffset = raf.readLong();
+                                tidToFirstLogRecord.put(activeTrxKey, activeTrxOffset);
+                            }
+                            raf.skipBytes(LONG_SIZE);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                for (Long transactionId : tidToFirstLogRecord.keySet()) {
+                    long beginOffset = tidToFirstLogRecord.get(transactionId);
+                    raf.seek(beginOffset);
+                    boolean flag = commitedTransactions.contains(transactionId);
+                    while (raf.getFilePointer() < raf.length()) {
+                        int type = raf.readInt();
+                        if (type == UPDATE_RECORD) {
+                            long tid = raf.readLong();
+                            Page beforePage = readPageData(raf);
+                            Page afterPage = readPageData(raf);
+                            raf.skipBytes(LONG_SIZE);
+                            if (tid == transactionId) {
+                                if (flag)
+                                    Database.getCatalog().getDatabaseFile(afterPage.getId().getTableId()).writePage(afterPage);         // redo
+                                else
+                                    Database.getCatalog().getDatabaseFile(beforePage.getId().getTableId()).writePage(beforePage);       // undo the updates of loser transaction
+                            }
+                        } else
+                            raf.skipBytes(LONG_SIZE * 2);
+                    }
+                }
+                tidToFirstLogRecord.clear();
             }
         }
     }
